@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>模板</title>
+    <!-- BS5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <!-- BS5 Icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 1.React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- 2.ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- 3.Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <!-- 4.建立根容器 -->
+    <div id="App"></div>
+  </body>
+
+  <!-- babel 需要轉譯的區塊 -->
+  <script type="text/babel">
+    // 5.定義根元件 App
+    const App = function () {
+      console.log("元件渲染");
+
+      // 從 React 物件中取得 Hook，建立區域變數
+      const useState = React.useState;
+      const useEffect = React.useEffect;
+
+      /*
+    解構賦值
+    const {useState, useEffect} = React;
+    */
+
+      /*
+    直接使用 React 的 Hook
+    [state, setState]= React.useState(1);
+    */
+
+      /*
+    Vite + ESM
+    import { useState, useEffect } from "react";
+    */
+
+      // JSX
+      return (
+        <>
+          {console.log("執行JSX")}
+          {"模板"}
+        </>
+      );
+    };
+
+    // 6.取得根容器 DOM 節點
+    const rootEl = document.querySelector("#App");
+
+    // 7.建立 React Root 物件
+    // root 是 React UI Tree 的入口 / 根
+    const root = ReactDOM.createRoot(rootEl);
+
+    // 8.將 App 元件渲染到 React Root
+    // 從這裡開始，由 React 管理這個 Root 裡的 UI
+    root.render(<App />);
+  </script>
+</html>
+
+<!--
+1. 載入 React
+        ↓
+2. 載入 ReactDOM
+        ↓
+3. 載入 Babel
+        ↓
+4. HTML 建立根容器
+        ↓
+5. 定義 App 元件
+        ↓
+6. 取得根容器 DOM
+        ↓
+7. 建立 React Root
+        ↓
+8. root.render(<App />)
+        ↓
+   React 開始管理 UI
+-->
+
+<!-- 
+root
+│
+│  render(<App />)
+│        ↓
+│     React Element
+│        ↓
+├── 管理這個 React Element 所形成的 UI Tree
+│
+└── 管理這棵 UI Tree 與實際 DOM 的更新
+-->
