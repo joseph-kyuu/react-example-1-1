@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="App"></div>
+  </body>
+  <script type="text/babel">
+    const User = function ({ name }) {
+      const [text, setText] = React.useState("");
+
+      return (
+        <div>
+          <h3>{name}</h3>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="輸入一些文字"
+          />
+        </div>
+      );
+    };
+
+    const App = function () {
+      const [users, setUsers] = React.useState(["a", "b", "c"]);
+      const changeOrder = function () {
+        setUsers(["c", "a", "b"]);
+      };
+      const backOrder = function () {
+        setUsers(["a", "b", "c"]);
+      };
+      return (
+        <>
+          <button onClick={changeOrder}> 交換順序 </button>
+          <button onClick={backOrder}> 還原順序 </button>
+          <hr />
+          {users.map((user) => (
+            <User key={Math.random()} name={user} />
+          ))}
+        </>
+      );
+    };
+    const rootEl = document.querySelector("#App");
+    const root = ReactDOM.createRoot(rootEl);
+    root.render(<App />);
+  </script>
+</html>
