@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>12_task_two_模板</title>
+    <!-- BS5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <!-- BS5 Icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="./css/task_2.css" />
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 1.React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- 2.ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- 3.Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <!-- 4.建立根容器 -->
+    <div id="App"></div>
+  </body>
+
+  <!-- babel 需要轉譯的區塊 -->
+  <script type="text/babel">
+    // axios 全域設定
+    // API 網址設定
+    axios.defaults.baseURL = "https://ec-course-api.hexschool.io/v2";
+    // Token 設定
+    // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    // cookie 設定
+    // 存入 cookie 設定值
+    // document.cookie = "someCookieName=true; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/";
+    // 取出 cookie 設定值
+    // var myCookie = document.cookie.replace(/(?:(?:^|.*;\s*)test2\s*\=\s*([^;]*).*$)|^.*$/,"$1",);
+
+    // 請自行替換 API_PATH
+    const API_PATH = "josephkyuu";
+    // 5.定義根元件 App
+
+    const App = function () {
+      console.log("元件渲染");
+
+      // 從 React 物件中取得 Hook，建立區域變數
+      const [formData, setFormData] = React.useState({
+        username: "",
+        password: "",
+      });
+
+      const [isAuth, setIsAuth] = React.useState(false);
+      const [products, setProducts] = React.useState([]);
+      const [tempProduct, setTempProduct] = React.useState(null);
+
+      // JSX
+      return (
+        <>
+          {isAuth ? (
+            // 商品區塊
+            <div className="container">
+              <div className="row mt-5">
+                {/* 商品列表 */}
+                <div className="col-md-6">
+                  <h2 className="text-center">商品列表</h2>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>商品名稱</th>
+                        <th>原價</th>
+                        <th>售價</th>
+                        <th>是否啟用</th>
+                        <th>商品詳情</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map(function (product) {
+                        return (
+                          <tr key={product.id}>
+                            <td>{product.title}</td>
+                            <td>{product.origin_price}</td>
+                            <td>{product.price}</td>
+                            <td>{product.is_enabled ? "啟用" : "關閉"}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={function () {
+                                  setProductDetail(product);
+                                }}
+                              >
+                                商品詳情
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {/* 商品詳情 */}
+                <div className="col-md-6">
+                  <h2 className="text-center">商品詳情</h2>
+                  {productDetail ? (
+                    <div>
+                      <h2>{productDetail.title}</h2>
+                      <img src={productDetail.imageUrl} alt="商品照片" />
+                      <p>{productDetail.description}</p>
+                      <p>
+                        <span className="me-3 fs-4">
+                          售價：{productDetail.price}元/個
+                        </span>
+                        <small>
+                          原價：
+                          <span className="text-decoration-line-through me-3">
+                            {productDetail.origin_price}
+                          </span>
+                          元/個
+                        </small>
+                      </p>
+                      {productDetail.imagesUrl.map(function (item, index) {
+                        return (
+                          <img
+                            className="images"
+                            src={item}
+                            alt="商品照"
+                            key={index}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-secondary">請點擊任一查看商品詳情按鈕</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // 登入區塊
+            <div className="container login">
+              <div className="row justify-content-center">
+                {/* 標題 */}
+                <h1 className="h3 mb-3 font-weight-normal">請先登入</h1>
+                {/* 登入表單 */}
+                <div className="col-8">
+                  {/* 表單 */}
+                  <form id="form" className="form-signin">
+                    {/* 帳號 */}
+                    <div className="form-floating mb-3">
+                      <input
+                        type="email"
+                        className="form-control"
+                        id="username"
+                        placeholder="name@example.com"
+                        required
+                        autoFocus
+                      />
+                      <label htmlFor="username">Email address</label>
+                    </div>
+                    {/* 密碼 */}
+                    <div className="form-floating">
+                      <input
+                        type="password"
+                        className="form-control"
+                        id="password"
+                        placeholder="Password"
+                        required
+                      />
+                      <label htmlFor="password">Password</label>
+                    </div>
+                    {/* CTA */}
+                    <button
+                      className="btn btn-lg btn-primary w-100 mt-3"
+                      type="submit"
+                    >
+                      登入
+                    </button>
+                  </form>
+                </div>
+              </div>
+              <p className="mt-5 mb-3 text-muted">&copy; 2024~∞ - 六角學院</p>
+            </div>
+          )}
+        </>
+      );
+    };
+
+    // 6.取得根容器 DOM 節點
+    const rootEl = document.querySelector("#App");
+
+    // 7.建立 React Root 物件
+    // root 是 React UI Tree 的入口 / 根
+    const root = ReactDOM.createRoot(rootEl);
+
+    // 8.將 App 元件渲染到 React Root
+    // 從這裡開始，由 React 管理這個 Root 裡的 UI
+    root.render(<App />);
+  </script>
+</html>
+
+<!--
+1. 載入 React
+        ↓
+2. 載入 ReactDOM
+        ↓
+3. 載入 Babel
+        ↓
+4. HTML 建立根容器
+        ↓
+5. 定義 App 元件
+        ↓
+6. 取得根容器 DOM
+        ↓
+7. 建立 React Root
+        ↓
+8. root.render(<App />)
+        ↓
+   React 開始管理 UI
+-->
+
+<!-- 
+root
+│
+│  render(<App />)
+│        ↓
+│     React Element
+│        ↓
+├── 管理這個 React Element 所形成的 UI Tree
+│
+└── 管理這棵 UI Tree 與實際 DOM 的更新
+-->
