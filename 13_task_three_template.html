@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>13_task_three_template</title>
+    <!-- BS5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <!-- BS5 Icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="./css/task_2.css" />
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 1.React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- 2.ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- 3.Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <!-- 4.建立根容器 -->
+    <div id="App"></div>
+  </body>
+
+  <!-- babel 需要轉譯的區塊 -->
+  <script type="text/babel">
+    // cookie 設定
+
+    // 取出 cookie 設定值
+    var mytoken = document.cookie.replace(
+      /(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)|^.*$/,
+      "$1",
+    );
+
+    // axios 全域設定
+    // API 網址設定
+    axios.defaults.baseURL = "https://ec-course-api.hexschool.io/v2";
+    // Token 設定
+    axios.defaults.headers.common["Authorization"] = mytoken;
+
+    // 請自行替換 API_PATH
+    const API_PATH = "josephkyuu";
+    // 5.定義根元件 App
+
+    const App = function () {
+      console.log("元件渲染");
+
+      // 從 React 物件中取得 Hook，建立區域變數
+      const [formData, setFormData] = React.useState({
+        username: "",
+        password: "",
+      });
+      const [isAuth, setIsAuth] = React.useState(!!mytoken);
+      const [products, setProducts] = React.useState([]);
+      const [productDetail, setProductDetail] = React.useState("");
+      const addProductRef = React.useRef(null);
+      const productModalRef = React.useRef(null);
+
+      // handler
+      // 登入
+      function formDataHandler(e) {
+        setFormData({
+          ...formData,
+          [e.target.name]: e.target.value,
+        });
+      }
+
+      // 取得商品
+      function getProdcutsHandler() {
+        axios.get(`/api/${API_PATH}/admin/products`).then(function (res) {
+          console.log("成功取得全部商品");
+          setProducts(res.data.products);
+        });
+      }
+
+      // 取得商品
+      React.useEffect(function () {
+        if (mytoken) {
+          getProdcutsHandler();
+        }
+      }, []);
+
+      // 建立 modal
+      React.useEffect(
+        function () {
+          productModalRef.current = new bootstrap.Modal(addProductRef.current);
+        },
+        [isAuth],
+      );
+
+      // JSX
+      return (
+        <>
+          {isAuth ? (
+            // 商品區塊
+            <div className="container">
+              <div className="row mt-5">
+                {/* 商品列表 */}
+                <div className="col-md-7">
+                  {/* 標題、建立商品按鈕 */}
+                  <div className="d-flex justify-content-between">
+                    <h2>商品列表</h2>
+                    {/* 建立商品按鈕 */}
+                    <button
+                      type="button"
+                      className="btn btn-warning"
+                      onClick={function () {
+                        productModalRef.current.show();
+                      }}
+                    >
+                      建立商品
+                    </button>
+                  </div>
+
+                  {products.length === 0 ? (
+                    <p>商品載入中...</p>
+                  ) : (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>商品名稱</th>
+                          <th>原價</th>
+                          <th>售價</th>
+                          <th>是否啟用</th>
+                          <th>商品詳情</th>
+                          <th>編輯商品</th>
+                          <th>刪除商品</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {products.map(function (product) {
+                          return (
+                            <tr key={product.id}>
+                              <td>{product.title}</td>
+                              <td>{product.origin_price}</td>
+                              <td>{product.price}</td>
+                              <td>{product.is_enabled ? "啟用" : "關閉"}</td>
+                              {/* 商品詳情 */}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  onClick={function () {
+                                    setProductDetail(product);
+                                  }}
+                                >
+                                  商品詳情
+                                </button>
+                              </td>
+                              {/* 編輯商品 */}
+                              <td>
+                                <button type="button" className="btn btn-info">
+                                  編輯商品
+                                </button>
+                              </td>
+                              {/* 刪除商品 */}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger"
+                                >
+                                  刪除商品
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                {/* 商品詳情 */}
+                <div className="col-md-5">
+                  <h2 className="text-center">商品詳情</h2>
+                  {productDetail ? (
+                    <div>
+                      <h2>{productDetail.title}</h2>
+                      <img src={productDetail.imageUrl} alt="商品照片" />
+                      <p>{productDetail.description}</p>
+                      <p>
+                        <span className="me-3 fs-4">
+                          售價：{productDetail.price}元/個
+                        </span>
+                        <small>
+                          原價：
+                          <span className="text-decoration-line-through me-3">
+                            {productDetail.origin_price}
+                          </span>
+                          元/個
+                        </small>
+                      </p>
+                      {productDetail.imagesUrl.map(function (item, index) {
+                        return (
+                          <img
+                            className="images"
+                            src={item}
+                            alt="商品照"
+                            key={index}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-secondary">請點擊任一查看商品詳情按鈕</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // 登入區塊
+            <div className="container login">
+              <div className="row justify-content-center">
+                {/* 標題 */}
+                <h1 className="h3 mb-3 font-weight-normal">請先登入</h1>
+                {/* 登入表單 */}
+                <div className="col-8">
+                  {/* 表單 */}
+                  <form
+                    id="form"
+                    className="form-signin"
+                    onSubmit={function (e) {
+                      e.preventDefault();
+                      axios
+                        .post(`/admin/signin`, formData)
+                        .then(function (res) {
+                          // cookie 設定
+                          // 存入 cookie 設定值
+                          document.cookie = `token=${res.data.token}; expires=${new Date(res.data.expired)}`;
+                          axios.defaults.headers.common["Authorization"] =
+                            res.data.token;
+                          console.log("成功登入");
+                          getProdcutsHandler();
+                          setIsAuth(true);
+                        })
+                        .catch(function (err) {
+                          console.log("失敗");
+                          console.dir(err);
+                        });
+                    }}
+                  >
+                    {/* 帳號 */}
+                    <div className="form-floating mb-3">
+                      <input
+                        type="email"
+                        className="form-control"
+                        id="username"
+                        placeholder="name@example.com"
+                        name="username"
+                        required
+                        autoFocus
+                        onChange={formDataHandler}
+                      />
+                      <label htmlFor="username">Email address</label>
+                    </div>
+                    {/* 密碼 */}
+                    <div className="form-floating">
+                      <input
+                        type="password"
+                        className="form-control"
+                        id="password"
+                        placeholder="Password"
+                        name="password"
+                        required
+                        onChange={formDataHandler}
+                      />
+                      <label htmlFor="password">Password</label>
+                    </div>
+                    {/* CTA */}
+                    <button
+                      className="btn btn-lg btn-primary w-100 mt-3"
+                      type="submit"
+                    >
+                      登入
+                    </button>
+                  </form>
+                </div>
+              </div>
+              <p className="mt-5 mb-3 text-muted">&copy; 2024~∞ - 六角學院</p>
+            </div>
+          )}
+
+          {/*modal*/}
+          <div
+            className="modal fade"
+            id="exampleModal"
+            tabIndex="-1"
+            aria-labelledby="exampleModalLabel"
+            aria-hidden="true"
+            ref={addProductRef}
+          >
+            <div className="modal-dialog modal-xl">
+              <div className="modal-content border-0">
+                <div className="modal-header bg-dark text-white">
+                  <h5 id="productModalLabel" className="modal-title">
+                    <span>新增產品</span>
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="row">
+                    <div className="col-sm-4">
+                      <div className="mb-2">
+                        <div className="mb-3">
+                          <label htmlFor="imageUrl" className="form-label">
+                            輸入圖片網址
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入圖片連結"
+                          />
+                        </div>
+                        <img className="img-fluid" src="" alt="" />
+                      </div>
+                      <div>
+                        <button className="btn btn-outline-primary btn-sm d-block w-100">
+                          新增圖片
+                        </button>
+                      </div>
+                      <div>
+                        <button className="btn btn-outline-danger btn-sm d-block w-100">
+                          刪除圖片
+                        </button>
+                      </div>
+                    </div>
+                    <div className="col-sm-8">
+                      <div className="mb-3">
+                        <label htmlFor="title" className="form-label">
+                          標題
+                        </label>
+                        <input
+                          id="title"
+                          type="text"
+                          className="form-control"
+                          placeholder="請輸入標題"
+                        />
+                      </div>
+
+                      <div className="row">
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="category" className="form-label">
+                            分類
+                          </label>
+                          <input
+                            id="category"
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入分類"
+                          />
+                        </div>
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="unit" className="form-label">
+                            單位
+                          </label>
+                          <input
+                            id="unit"
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入單位"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="row">
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="origin_price" className="form-label">
+                            原價
+                          </label>
+                          <input
+                            id="origin_price"
+                            type="number"
+                            min="0"
+                            className="form-control"
+                            placeholder="請輸入原價"
+                          />
+                        </div>
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="price" className="form-label">
+                            售價
+                          </label>
+                          <input
+                            id="price"
+                            type="number"
+                            min="0"
+                            className="form-control"
+                            placeholder="請輸入售價"
+                          />
+                        </div>
+                      </div>
+                      <hr />
+
+                      <div className="mb-3">
+                        <label htmlFor="description" className="form-label">
+                          產品描述
+                        </label>
+                        <textarea
+                          id="description"
+                          className="form-control"
+                          placeholder="請輸入產品描述"
+                        ></textarea>
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="content" className="form-label">
+                          說明內容
+                        </label>
+                        <textarea
+                          id="content"
+                          className="form-control"
+                          placeholder="請輸入說明內容"
+                        ></textarea>
+                      </div>
+                      <div className="mb-3">
+                        <div className="form-check">
+                          <input
+                            id="is_enabled"
+                            className="form-check-input"
+                            type="checkbox"
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor="is_enabled"
+                          >
+                            是否啟用
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    取消
+                  </button>
+                  <button type="button" className="btn btn-primary">
+                    確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    };
+
+    // 6.取得根容器 DOM 節點
+    const rootEl = document.querySelector("#App");
+
+    // 7.建立 React Root 物件
+    // root 是 React UI Tree 的入口 / 根
+    const root = ReactDOM.createRoot(rootEl);
+
+    // 8.將 App 元件渲染到 React Root
+    // 從這裡開始，由 React 管理這個 Root 裡的 UI
+    root.render(<App />);
+  </script>
+</html>
+
+<!--
+1. 載入 React
+        ↓
+2. 載入 ReactDOM
+        ↓
+3. 載入 Babel
+        ↓
+4. HTML 建立根容器
+        ↓
+5. 定義 App 元件
+        ↓
+6. 取得根容器 DOM
+        ↓
+7. 建立 React Root
+        ↓
+8. root.render(<App />)
+        ↓
+   React 開始管理 UI
+-->
+
+<!-- 
+root
+│
+│  render(<App />)
+│        ↓
+│     React Element
+│        ↓
+├── 管理這個 React Element 所形成的 UI Tree
+│
+└── 管理這棵 UI Tree 與實際 DOM 的更新
+-->
