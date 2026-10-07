@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>12_task_two</title>
+    <!-- BS5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <!-- BS5 Icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="./css/task_2.css" />
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- 1.React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- 2.ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- 3.Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body>
+    <!-- 4.建立根容器 -->
+    <div id="App"></div>
+  </body>
+
+  <!-- babel 需要轉譯的區塊 -->
+  <script type="text/babel">
+    // axios 全域設定
+    // API 網址設定
+    axios.defaults.baseURL = "https://ec-course-api.hexschool.io/v2";
+
+    // 請自行替換 API_PATH
+    const API_PATH = "josephkyuu2";
+    // 5.定義根元件 App
+
+    const App = function () {
+      console.log("元件渲染");
+
+      /*
+      ===========
+        !!!!! Hook !!!!!
+      ===========
+      */
+
+      // 判斷是有 token，確認登入狀態
+      const [isAuth, setIsAuth] = React.useState(false);
+
+      // 從資料庫取得全部商品資料、儲存全部商品資料
+      const [products, setProducts] = React.useState([]);
+      // 從 products 取得單一商品資料、用於渲染商品詳情
+      const [productDetail, setProductDetail] = React.useState("");
+      // 從 React 物件中取得 Hook，建立區域變數
+      const [formData, setFormData] = React.useState({
+        username: "",
+        password: "",
+      });
+
+      // cookie 設定
+      // 取出 cookie 設定值
+
+      React.useEffect(function () {
+        const mytoken = document.cookie.replace(
+          /(?:(?:^|.*;\s*)token\s*\=\s*([^;]*).*$)|^.*$/,
+          "$1",
+        );
+        if (mytoken) {
+          // Token 設定
+          axios.defaults.headers.common["Authorization"] = mytoken;
+          getProdcutsHandler();
+          setIsAuth(true);
+        }
+      }, []);
+
+      // 取得建立商品、編輯商品的modal，所使用的 DOM 節點
+      const addProductRef = React.useRef(null);
+      // 建立商品、編輯商品的modal，所使用的 BS5 實體
+      const productModalRef = React.useRef(null);
+      // 建立 modal 實體，操作 modal 的方法
+      React.useEffect(
+        function () {
+          productModalRef.current = new bootstrap.Modal(addProductRef.current);
+        },
+        [isAuth],
+      );
+
+      // 取得建立商品、編輯商品的modal，所使用的 DOM 節點
+      const deleteProductRef = React.useRef(null);
+      // 建立商品、編輯商品的modal，所使用的 BS5 實體
+      const deleteProductModalRef = React.useRef(null);
+      // 建立 modal 實體，操作 modal 的方法
+      React.useEffect(
+        function () {
+          deleteProductModalRef.current = new bootstrap.Modal(
+            deleteProductRef.current,
+          );
+        },
+        [isAuth],
+      );
+
+      // 新商品資料結構，初始值
+      const emptyProduct = {
+        title: "",
+        category: "",
+        origin_price: "",
+        price: "",
+        unit: "",
+        description: "",
+        content: "",
+        is_enabled: 1,
+        imageUrl: "",
+        imagesUrl: [1, 1],
+      };
+
+      // 儲存新商品的資料
+      const [productData, setProductData] = React.useState(emptyProduct);
+
+      /*
+      ===========
+      !!!!! 事件處理器、API !!!!!
+      ===========
+      */
+
+      // 登入 Handler
+      function formDataHandler(e) {
+        setFormData({
+          ...formData,
+          [e.target.name]: e.target.value,
+        });
+      }
+
+      // 登入 API
+      function postAdminSignin(e) {
+        e.preventDefault();
+        axios
+          .post(`/admin/signin`, formData)
+          .then(function (res) {
+            // cookie 設定
+            // 取得 token 存入 cookie
+            document.cookie = `token=${res.data.token}; expires=${new Date(res.data.expired)}`;
+            // 將 token 存入 axios
+            axios.defaults.headers.common["Authorization"] = res.data.token;
+            getProdcutsHandler();
+            setIsAuth(true);
+            console.log("登入成功");
+          })
+          .catch(function (err) {
+            console.log("登入失敗");
+            console.dir(err);
+          });
+      }
+
+      // 從資料庫，取得全部商品資料 API
+      function getProdcutsHandler() {
+        axios
+          .get(`/api/${API_PATH}/admin/products`)
+          .then(function (res) {
+            console.log("成功取得全部商品");
+            console.log(res.data.products);
+            setProducts(res.data.products);
+          })
+          .catch(function (err) {
+            console.log(err);
+          });
+      }
+
+      // 儲存所有建立商品、編輯商品的輸入欄位的商品資料 Handler
+      function addProductDataHandler(e) {
+        setProductData({
+          ...productData,
+          [e.target.name]:
+            e.target.type === "checkbox" ? e.target.checked : e.target.value,
+        });
+      }
+
+      // 儲存圖片陣列資料 Handler
+      function addImagesDataHandler(e, index) {
+        const newImagesUrl = [...productData.imagesUrl];
+        newImagesUrl[index] = e.target.value;
+        setProductData({
+          ...productData,
+          imagesUrl: newImagesUrl,
+        });
+      }
+
+      // 新增商品資料 API
+      function postAdminProduct(convertProductData) {
+        axios
+          .post(`api/${API_PATH}/admin/product`, convertProductData)
+          .then(function (res) {
+            getProdcutsHandler();
+            productModalRef.current.hide();
+          })
+          .catch(function (err) {
+            console.dir(err);
+          });
+      }
+
+      // 更新商品資料 API
+      function putAdminProduct(convertProductData, id) {
+        axios
+          .put(`api/${API_PATH}/admin/product/${id}`, convertProductData)
+          .then(function (res) {
+            getProdcutsHandler();
+            productModalRef.current.hide();
+          })
+          .catch(function (err) {
+            console.dir(err);
+          });
+      }
+
+      // 編輯、新增商品資料
+      function modifyProductData() {
+        // 資料型別轉換
+        const convertProductData = {
+          data: {
+            ...productData,
+            origin_price: Number(productData.origin_price),
+            price: Number(productData.price),
+            is_enabled: Number(productData.is_enabled),
+          },
+        };
+        console.log(convertProductData);
+        if (convertProductData.data.id) {
+          putAdminProduct(convertProductData, convertProductData.data.id);
+        } else {
+          postAdminProduct(convertProductData);
+        }
+      }
+
+      // 刪除商品資料 API
+      function deleteAdminProduct(id) {
+        axios
+          .delete(`api/${API_PATH}/admin/product/${id}`)
+          .then(function (res) {
+            getProdcutsHandler();
+            console.dir(res);
+            console.dir("刪除商品成功");
+          })
+          .catch(function (err) {
+            console.dir(err);
+          });
+      }
+
+      // 新增圖片輸入框 Handler
+      function addImagesInputHandler() {}
+
+      // 刪除圖片輸入框 Handler
+      function deleteImagesInputHandler() {}
+
+      // JSX
+      return (
+        <>
+          {isAuth ? (
+            // 商品區塊
+            <div className="container">
+              <div className="row mt-5">
+                {/* 商品列表 */}
+                <div className="col-md-7">
+                  {/* 標題、建立商品按鈕 */}
+                  <div className="d-flex justify-content-between">
+                    <h2>商品列表</h2>
+                    {/* 建立商品按鈕 */}
+                    <button
+                      type="button"
+                      className="btn btn-warning"
+                      name="addProductBtn"
+                      onClick={function () {
+                        setProductData(emptyProduct);
+                        productModalRef.current.show();
+                      }}
+                    >
+                      建立商品
+                    </button>
+                  </div>
+                  {/* 帶入商品料，map() 跑商品列表 */}
+                  {products.length === 0 ? (
+                    <p>商品載入中...</p>
+                  ) : (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>商品名稱</th>
+                          <th>原價</th>
+                          <th>售價</th>
+                          <th>是否啟用</th>
+                          <th>商品詳情</th>
+                          <th>編輯商品</th>
+                          <th>刪除商品</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {products.map(function (product) {
+                          return (
+                            <tr key={product.id}>
+                              <td className="text-break">{product.title}</td>
+                              <td>{product.origin_price}</td>
+                              <td>{product.price}</td>
+                              <td
+                                className={
+                                  product.is_enabled ? "text-success" : ""
+                                }
+                              >
+                                {product.is_enabled ? "啟用" : "關閉"}
+                              </td>
+                              {/* 商品詳情 */}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  onClick={function () {
+                                    setProductDetail(product);
+                                  }}
+                                >
+                                  商品詳情
+                                </button>
+                              </td>
+                              {/* 編輯商品 */}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-info"
+                                  name="editeProductBtn"
+                                  onClick={function () {
+                                    setProductData(product);
+                                    productModalRef.current.show();
+                                  }}
+                                >
+                                  編輯商品
+                                </button>
+                              </td>
+                              {/* 刪除商品 */}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger"
+                                  name="editeProductBtn"
+                                  onClick={function () {
+                                    setProductData(product);
+                                    deleteProductModalRef.current.show();
+                                  }}
+                                >
+                                  刪除商品
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                {/* 商品詳情 */}
+                <div className="col-md-5">
+                  <h2 className="text-center">商品詳情</h2>
+                  {productDetail ? (
+                    <div>
+                      <h2>{productDetail.title}</h2>
+                      <img src={productDetail.imageUrl} alt="商品照片" />
+                      <p>{productDetail.description}</p>
+                      <p>
+                        <span className="me-3 fs-4">
+                          售價：{productDetail.price}元/個
+                        </span>
+                        <small>
+                          原價：
+                          <span className="text-decoration-line-through me-3">
+                            {productDetail.origin_price}
+                          </span>
+                          元/個
+                        </small>
+                      </p>
+                      {productDetail.imagesUrl.map(function (item, index) {
+                        return (
+                          <img
+                            className="images"
+                            src={item}
+                            alt="商品照"
+                            key={index}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-secondary">請點擊任一查看商品詳情按鈕</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // 登入區塊
+            <div className="container login">
+              <div className="row justify-content-center">
+                {/* 標題 */}
+                <h1 className="h3 mb-3 font-weight-normal">請先登入</h1>
+                {/* 登入表單 */}
+                <div className="col-8">
+                  {/* 表單 */}
+                  <form
+                    id="form"
+                    className="form-signin"
+                    onSubmit={postAdminSignin}
+                  >
+                    {/* 帳號 */}
+                    <div className="form-floating mb-3">
+                      <input
+                        type="email"
+                        className="form-control"
+                        id="username"
+                        placeholder="name@example.com"
+                        name="username"
+                        required
+                        autoFocus
+                        value={formData.username}
+                        onChange={formDataHandler}
+                      />
+                      <label htmlFor="username">Email address</label>
+                    </div>
+                    {/* 密碼 */}
+                    <div className="form-floating">
+                      <input
+                        type="password"
+                        className="form-control"
+                        id="password"
+                        placeholder="Password"
+                        name="password"
+                        required
+                        value={formData.password}
+                        onChange={formDataHandler}
+                      />
+                      <label htmlFor="password">Password</label>
+                    </div>
+                    {/* CTA */}
+                    <button
+                      className="btn btn-lg btn-primary w-100 mt-3"
+                      type="submit"
+                    >
+                      登入
+                    </button>
+                  </form>
+                </div>
+              </div>
+              <p className="mt-5 mb-3 text-muted">&copy; 2024~∞ - 六角學院</p>
+            </div>
+          )}
+
+          {/* modal */}
+          {/* 新增、編輯商品 modal*/}
+          <div
+            className="modal fade"
+            id="exampleModal"
+            tabIndex="-1"
+            aria-labelledby="exampleModalLabel"
+            aria-hidden="true"
+            ref={addProductRef}
+          >
+            <div className="modal-dialog modal-xl">
+              <div className="modal-content border-0">
+                {/*標題*/}
+                <div className="modal-header bg-dark text-white">
+                  <h5 id="productModalLabel" className="modal-title">
+                    <span>{productData.id ? "編輯產品" : "建立產品"}</span>
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <div className="row">
+                    {/*開頭*/}
+                    <div className="col-sm-4">
+                      <div className="mb-2">
+                        <div className="mb-3">
+                          {/* 圖片輸入框 */}
+                          <label htmlFor="imageUrl" className="form-label">
+                            輸入圖片網址
+                          </label>
+                          <input
+                            id="imageUrl"
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入圖片連結"
+                            name="imageUrl"
+                            onChange={addProductDataHandler}
+                            value={productData.imageUrl}
+                          />
+                        </div>
+                        {/* 顯示圖片 */}
+                        {productData.imageUrl ? (
+                          <img
+                            className="img-fluid"
+                            src={productData.imageUrl}
+                            alt="主圖"
+                          />
+                        ) : (
+                          ""
+                        )}
+                      </div>
+                      {productData.imagesUrl.map(function (url, index) {
+                        return (
+                          <div className="mb-2" key={index}>
+                            <div className="mb-3">
+                              {/* 圖片輸入框 */}
+                              <label htmlFor={index} className="form-label">
+                                輸入圖片網址
+                              </label>
+                              <input
+                                id={index}
+                                type="text"
+                                className="form-control"
+                                placeholder="請輸入圖片連結"
+                                name="imageUrl"
+                                onChange={function (e) {
+                                  addImagesDataHandler(e, index);
+                                }}
+                                value={url}
+                              />
+                            </div>
+                            {/* 顯示圖片 */}
+                            {productData.imageUrl ? (
+                              <img className="img-fluid" src={url} alt="主圖" />
+                            ) : (
+                              ""
+                            )}
+                          </div>
+                        );
+                      })}
+                      <div>
+                        <button
+                          className="btn btn-outline-primary btn-sm d-block w-100"
+                          onClick={function () {
+                            const newImagesUrl = [...productData.imagesUrl];
+                            newImagesUrl.push("");
+                            setProductData({
+                              ...productData,
+                              imagesUrl: newImagesUrl,
+                            });
+                          }}
+                        >
+                          新增圖片
+                        </button>
+                      </div>
+                      <div>
+                        <button
+                          className="btn btn-outline-danger btn-sm d-block w-100"
+                          onClick={function () {
+                            const newImagesUrl = [...productData.imagesUrl];
+                            newImagesUrl.pop();
+                            setProductData({
+                              ...productData,
+                              imagesUrl: newImagesUrl,
+                            });
+                          }}
+                        >
+                          刪除圖片
+                        </button>
+                      </div>
+                    </div>
+                    <div className="col-sm-8">
+                      <div className="mb-3">
+                        <label htmlFor="title" className="form-label">
+                          標題
+                        </label>
+                        <input
+                          id="title"
+                          type="text"
+                          className="form-control"
+                          placeholder="請輸入標題"
+                          name="title"
+                          onChange={addProductDataHandler}
+                          value={productData.title}
+                        />
+                      </div>
+                      <div className="row">
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="category" className="form-label">
+                            分類
+                          </label>
+                          <input
+                            id="category"
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入分類"
+                            name="category"
+                            onChange={addProductDataHandler}
+                            value={productData.category}
+                          />
+                        </div>
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="unit" className="form-label">
+                            單位
+                          </label>
+                          <input
+                            id="unit"
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入單位"
+                            name="unit"
+                            onChange={addProductDataHandler}
+                            value={productData.unit}
+                          />
+                        </div>
+                      </div>
+                      <div className="row">
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="origin_price" className="form-label">
+                            原價
+                          </label>
+                          <input
+                            id="origin_price"
+                            type="number"
+                            min="0"
+                            className="form-control"
+                            placeholder="請輸入原價"
+                            name="origin_price"
+                            onChange={addProductDataHandler}
+                            value={productData.origin_price}
+                          />
+                        </div>
+                        <div className="mb-3 col-md-6">
+                          <label htmlFor="price" className="form-label">
+                            售價
+                          </label>
+                          <input
+                            id="price"
+                            type="number"
+                            min="0"
+                            className="form-control"
+                            placeholder="請輸入售價"
+                            name="price"
+                            onChange={addProductDataHandler}
+                            value={productData.price}
+                          />
+                        </div>
+                      </div>
+                      <hr />
+                      <div className="mb-3">
+                        <label htmlFor="description" className="form-label">
+                          產品描述
+                        </label>
+                        <textarea
+                          id="description"
+                          className="form-control"
+                          placeholder="請輸入產品描述"
+                          name="description"
+                          onChange={addProductDataHandler}
+                          value={productData.description}
+                        ></textarea>
+                      </div>
+                      <div className="mb-3">
+                        <label htmlFor="content" className="form-label">
+                          說明內容
+                        </label>
+                        <textarea
+                          id="content"
+                          className="form-control"
+                          placeholder="請輸入說明內容"
+                          name="content"
+                          onChange={addProductDataHandler}
+                          value={productData.content}
+                        ></textarea>
+                      </div>
+                      <div className="mb-3">
+                        <div className="form-check">
+                          <input
+                            id="is_enabled"
+                            className="form-check-input"
+                            type="checkbox"
+                            name="is_enabled"
+                            onChange={addProductDataHandler}
+                            checked={productData.is_enabled}
+                          />
+                          <label
+                            className="form-check-label"
+                            htmlFor="is_enabled"
+                          >
+                            是否啟用
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/*結尾*/}
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary">
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={modifyProductData}
+                  >
+                    確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* 刪除商品 modal*/}
+          <div
+            className="modal fade "
+            id="staticBackdrop"
+            tabIndex="-1"
+            aria-labelledby="staticBackdropLabel"
+            aria-hidden="true"
+            ref={deleteProductRef}
+          >
+            <div className="modal-dialog ">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h1 className="modal-title fs-5 " id="staticBackdropLabel">
+                    確定要刪除商品嗎？
+                  </h1>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary">
+                    取消
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={function () {
+                      deleteAdminProduct(productData.id);
+                      deleteProductModalRef.current.hide();
+                    }}
+                  >
+                    確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    };
+
+    // 6.取得根容器 DOM 節點
+    const rootEl = document.querySelector("#App");
+
+    // 7.建立 React Root 物件
+    // root 是 React UI Tree 的入口 / 根
+    const root = ReactDOM.createRoot(rootEl);
+
+    // 8.將 App 元件渲染到 React Root
+    // 從這裡開始，由 React 管理這個 Root 裡的 UI
+    root.render(<App />);
+  </script>
+</html>
+
+<!--
+1. 載入 React
+        ↓
+2. 載入 ReactDOM
+        ↓
+3. 載入 Babel
+        ↓
+4. HTML 建立根容器
+        ↓
+5. 定義 App 元件
+        ↓
+6. 取得根容器 DOM
+        ↓
+7. 建立 React Root
+        ↓
+8. root.render(<App />)
+        ↓
+   React 開始管理 UI
+-->
+
+<!-- 
+root
+│
+│  render(<App />)
+│        ↓
+│     React Element
+│        ↓
+├── 管理這個 React Element 所形成的 UI Tree
+│
+└── 管理這棵 UI Tree 與實際 DOM 的更新
+-->
