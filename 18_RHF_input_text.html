@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>模板</title>
+    <!-- BS5 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+    <!-- BS5 Icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+    <!-- axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- 1.React 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+
+    <!-- 2.ReactDOM 18 -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- 3.Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- React Hook Form -->
+    <script src="https://cdn.jsdelivr.net/npm/react-hook-form/dist/index.umd.js"></script>
+  </head>
+  <body>
+    <!-- 4.建立根容器 -->
+    <div id="App"></div>
+  </body>
+
+  <!-- babel 需要轉譯的區塊 -->
+  <script type="text/babel">
+    // 5.定義根元件 App
+    const App = function () {
+      console.log("元件渲染");
+
+      // 從 React 物件中取得 Hook，建立區域變數
+      const useState = React.useState;
+      const useEffect = React.useEffect;
+
+      /*
+        解構賦值
+        const {useState, useEffect} = React;
+        */
+
+      /*
+        直接使用 React 的 Hook
+        [state, setState]= React.useState(1);
+        */
+
+      /*
+        Vite + ESM
+        import { useState, useEffect } from "react";
+        */
+
+      /*
+        RHF
+        */
+      const { useForm } = ReactHookForm;
+      const {
+        register,
+        handleSubmit,
+        getValues,
+        watch,
+        subscribe,
+        setValue,
+        formState: { errors },
+      } = useForm({
+        defaultValues: {
+          hobbies: ["reading"],
+        },
+        mode: "onTouched",
+      });
+
+      useEffect(() => {
+        const unsubscribe = subscribe({
+          formState: {
+            values: true,
+          },
+          callback: ({ values, name, type }) => {
+            console.log("subscribe:", values);
+            console.log("subscribe:", name);
+            console.log("subscribe:", type);
+            if (name === "reading1" || name === "reading2") {
+              setValue("name", name);
+            }
+          },
+        });
+        console.log("unsubscribe:", unsubscribe);
+        return () => {
+          unsubscribe();
+        };
+      }, []);
+
+      // useEffect(() => {
+      //   watch((value) => {
+      //     console.log(value);
+      //   });
+      // }, []);
+
+      // JSX
+      return (
+        <>
+          {console.log("執行JSX")}
+          {console.log("getValue", getValues())}
+          {/*{console.log("watch", watch("name"))}*/}
+          {console.log("errors", errors)}
+
+          <div className="p-5">
+            <form
+              onSubmit={handleSubmit((result) => {
+                console.log("handleSubmit", result);
+              })}
+            >
+              {/* 輸入欄位 text*/}
+              <div className="mb-3">
+                <label htmlFor="exampleInputName1" className="form-label">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  className={`form-control ${errors.name && "is-invalid"}`}
+                  id="exampleInputName1"
+                  aria-describedby="name"
+                  {...register("name", { required: "請輸入年齡" })}
+                />
+                {errors.name && (
+                  <div id="emailHelp" className="form-text invalid-feedback">
+                    {errors.name.message}
+                  </div>
+                )}
+              </div>
+              {/* 輸入欄位 email*/}
+              <div className="mb-3">
+                <label htmlFor="exampleInputEmail1" className="form-label">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  className="form-control"
+                  id="exampleInputEmail1"
+                  aria-describedby="emailHelp"
+                  {...register("email")}
+                />
+                <div id="emailHelp" className="form-text">
+                  We'll never share your email with anyone else.
+                </div>
+              </div>
+              {/* 輸入欄位 password*/}
+              <div className="mb-3">
+                <label htmlFor="exampleInputPassword1" className="form-label">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  className="form-control"
+                  id="exampleInputPassword1"
+                  {...register("password")}
+                />
+              </div>
+              {/* checkbox 1 */}
+              <div className="mb-3 form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="exampleCheck1"
+                  {...register("reading1")}
+                />
+                <label className="form-check-label" htmlFor="exampleCheck1">
+                  Reading1
+                </label>
+              </div>
+              {/* checkbox 2 */}
+              <div className="mb-3 form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="exampleCheck2"
+                  {...register("reading2")}
+                />
+                <label className="form-check-label" htmlFor="exampleCheck2">
+                  Reading2
+                </label>
+              </div>
+              {/* checkbox 3 多選*/}
+              <div className="mb-3 form-check d-flex gap-5">
+                <div>
+                  <input
+                    type="checkbox"
+                    className={`form-check-input ${errors.hobbies && "is-invalid"}`}
+                    value="reading"
+                    id="hobby1"
+                    {...register("hobbies", {
+                      validate: (value) => {
+                        return value.length > 0 || "至少選一個";
+                      },
+                    })}
+                  />
+                  <label className="form-check-label" htmlFor="hobby1">
+                    Reading
+                  </label>
+                </div>
+                <div>
+                  <input
+                    type="checkbox"
+                    className={`form-check-input ${errors.hobbies && "is-invalid"}`}
+                    value="running"
+                    id="hobby2"
+                    {...register("hobbies", {
+                      validate: (value) => {
+                        return value.length > 0 || "至少選一個";
+                      },
+                    })}
+                  />
+                  <label className="form-check-label" htmlFor="hobby2">
+                    Running
+                  </label>
+                </div>
+                <div className="d-flex justify-content-center gap-2">
+                  <input
+                    type="checkbox"
+                    className={`form-check-input ${errors.hobbies && "is-invalid"}`}
+                    value="coding"
+                    id="hobby3"
+                    {...register("hobbies", {
+                      validate: (value) => {
+                        return value.length > 0 || "至少選一個";
+                      },
+                    })}
+                  />
+                  <label className="form-check-label" htmlFor="hobby3">
+                    Coding
+                  </label>
+                  {errors.hobbies && (
+                    <div
+                      id="emailHelp"
+                      className="form-text invalid-feedback m-0"
+                    >
+                      {errors.hobbies.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* select 1 */}
+              <select
+                className="form-select"
+                aria-label="Default select example"
+                defaultValue=""
+                {...register("select1")}
+              >
+                <option className="form-select" value="" disabled>
+                  Open this select menu
+                </option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+              </select>
+              {/* select 2 多選*/}
+              <select
+                className={`form-select ${errors.select2 && "is-invalid"}`}
+                aria-label="Default select example"
+                multiple
+                {...register("select2", {
+                  required: "請選擇項目",
+                  validate: (value) => {
+                    return value.length >= 2 || "請至少選擇兩個";
+                  },
+                })}
+              >
+                <option disabled>Open this select menu</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+              </select>
+              {errors.select2 && (
+                <div id="emailHelp" className="form-text invalid-feedback m-0">
+                  {errors.select2.message}
+                </div>
+              )}
+              {/* radio */}
+              <div className="form-check d-flex gap-5">
+                <div>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="radioDefault"
+                    id="radioDefault1"
+                    value="left"
+                    {...register("radio")}
+                  />
+                  <label className="form-check-label" htmlFor="radioDefault1">
+                    上
+                  </label>
+                </div>
+                <div>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="radioDefault"
+                    id="radioDefault2"
+                    value="middle"
+                    {...register("radio")}
+                  />
+                  <label className="form-check-label" htmlFor="radioDefault2">
+                    中
+                  </label>
+                </div>
+                <div>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="radioDefault"
+                    id="radioDefault3"
+                    value="down"
+                    {...register("radio")}
+                  />
+                  <label className="form-check-label" htmlFor="radioDefault3">
+                    下
+                  </label>
+                </div>
+              </div>
+              {/* submit */}
+              <button type="submit" className="btn btn-primary">
+                Submit
+              </button>
+            </form>
+          </div>
+        </>
+      );
+    };
+
+    // 6.取得根容器 DOM 節點
+    const rootEl = document.querySelector("#App");
+
+    // 7.建立 React Root 物件
+    // root 是 React UI Tree 的入口 / 根
+    const root = ReactDOM.createRoot(rootEl);
+
+    // 8.將 App 元件渲染到 React Root
+    // 從這裡開始，由 React 管理這個 Root 裡的 UI
+    root.render(<App />);
+  </script>
+</html>
+
+<!--
+1. 載入 React
+        ↓
+2. 載入 ReactDOM
+        ↓
+3. 載入 Babel
+        ↓
+4. HTML 建立根容器
+        ↓
+5. 定義 App 元件
+        ↓
+6. 取得根容器 DOM
+        ↓
+7. 建立 React Root
+        ↓
+8. root.render(<App />)
+        ↓
+   React 開始管理 UI
+-->
+
+<!-- 
+root
+│
+│  render(<App />)
+│        ↓
+│     React Element
+│        ↓
+├── 管理這個 React Element 所形成的 UI Tree
+│
+└── 管理這棵 UI Tree 與實際 DOM 的更新
+-->
