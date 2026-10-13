@@ -45,6 +45,7 @@ function ProductsList() {
     try {
       const res = await axios.get(`api/${VITE_API_PATH}/admin/products`);
       setproducts(res.data.products);
+      console.log(res);
 
       console.log("取得後台商品成功");
     } catch (error) {
@@ -56,12 +57,29 @@ function ProductsList() {
   async function postAdminProduct(data) {
     try {
       await axios.post(`api/${VITE_API_PATH}/admin/product`, data);
-      console.log("新增商品成功");
       await getAdminProducts();
       closeModifyModalHandler();
+      console.log("新增商品成功");
     } catch (error) {
       console.dir(error);
       console.log("新增商品失敗");
+    }
+  }
+
+  // put admin product
+  async function putAdminProduct(data, id) {
+    try {
+      const res = await axios.put(
+        `api/${VITE_API_PATH}/admin/product/${id}`,
+        data,
+      );
+
+      await getAdminProducts();
+      closeModifyModalHandler();
+      console.log("修改商品成功");
+    } catch (error) {
+      console.dir(error);
+      console.log("修改商品失敗");
     }
   }
 
@@ -73,7 +91,6 @@ function ProductsList() {
   //  建立 BS5 的 modal 實體
   useEffect(() => {
     modifyModal.current = new bootstrap.Modal(modifyModalNode.current);
-    console.log(modifyModal.current);
   }, []);
 
   // 開啟 modifyModal handler
@@ -99,9 +116,8 @@ function ProductsList() {
         ],
       };
       reset(emptyProduct);
+      setButtonMode(e.target.name);
     } else {
-      console.dir(e.target.name);
-      console.log(product);
       reset({
         title: product.title,
         category: product.category,
@@ -114,6 +130,8 @@ function ProductsList() {
         imageUrl: product.imageUrl,
         imagesUrl: [product.imagesUrl],
       });
+      setButtonMode(e.target.name);
+      setTempProduct(product);
     }
     modifyModal.current.show();
   }
@@ -125,34 +143,28 @@ function ProductsList() {
 
   // onsubmit handler
   function onsubmitHandler(data) {
-    // 建議使用展開語法...data
+    setTempProduct(data);
     const convertData = {
       data: {
-        title: data.title,
-        category: data.category,
+        ...data,
         origin_price: Number(data.origin_price),
         price: Number(data.price),
-        unit: data.unit,
-        description: data.description,
-        content: data.content,
         is_enabled: Number(data.is_enabled),
-        imageUrl: data.imageUrl,
-        imagesUrl: [
-          "圖片網址一",
-          "圖片網址二",
-          "圖片網址三",
-          "圖片網址四",
-          "圖片網址五",
-        ],
       },
     };
-    postAdminProduct(convertData);
+    if (buttonMode === "新增") {
+      // 建議使用展開語法...data
+
+      postAdminProduct(convertData);
+    } else {
+      putAdminProduct(convertData, tempProduct.id);
+    }
   }
 
   return (
     <>
       {console.log("渲染JSX")}
-      {}
+
       <div className="container">
         <div className="row mt-5">
           {/* 商品列表 */}
@@ -228,7 +240,7 @@ function ProductsList() {
           <div className="col-md-5">
             <h2 className="text-center">商品詳情</h2>
             <div>
-              {tempProduct.id ? (
+              {tempProduct.title ? (
                 <>
                   <h2>{tempProduct.title}</h2>
                   <img
