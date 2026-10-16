@@ -11,20 +11,35 @@ function ProductsList() {
   {
     console.log("渲染元件");
   }
-
+  // 空商品資料
+  const emptyProduct = {
+    title: "",
+    category: "",
+    origin_price: "",
+    price: "",
+    unit: "",
+    description: "",
+    content: "",
+    is_enabled: 0,
+    imageUrl: "",
+    imagesUrl: [""],
+    imageUpload: "",
+  };
   // 儲存後台全部商品
   const [products, setproducts] = useState([]);
   // 儲存後台單一商品資料
-  const [tempProduct, setTempProduct] = useState({});
+  const [tempProduct, setTempProduct] = useState(emptyProduct);
   // 判斷按鈕模式
   const [buttonMode, setButtonMode] = useState("");
+  // 儲存分頁
+  const [pagination, setPagination] = useState({});
   const navigate = useNavigate();
   // 儲存 modifyModal 節點
   const modifyModalNode = useRef(null);
   // 儲存 BS5 的 modifyModal 實體
   const modifyModal = useRef(null);
   // useForm
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset } = useForm({ shouldUnregister: true });
 
   // token
   function auth() {
@@ -41,11 +56,13 @@ function ProductsList() {
   }
 
   // get admin products
-  async function getAdminProducts() {
+  async function getAdminProducts(page = 1) {
     try {
-      const res = await axios.get(`api/${VITE_API_PATH}/admin/products`);
+      const res = await axios.get(`api/${VITE_API_PATH}/admin/products`, {
+        params: { page },
+      });
       setproducts(res.data.products);
-
+      setPagination(res.data.pagination);
       console.log("取得後台商品成功");
     } catch (error) {
       console.log("取得後台商品失敗");
@@ -56,12 +73,36 @@ function ProductsList() {
   async function postAdminProduct(data) {
     try {
       await axios.post(`api/${VITE_API_PATH}/admin/product`, data);
-      console.log("新增商品成功");
       await getAdminProducts();
       closeModifyModalHandler();
+      console.log("新增商品成功");
     } catch (error) {
       console.dir(error);
       console.log("新增商品失敗");
+    }
+  }
+
+  // put admin product
+  async function putAdminProduct(data, id) {
+    try {
+      await axios.put(`api/${VITE_API_PATH}/admin/product/${id}`, data);
+      await getAdminProducts();
+      closeModifyModalHandler();
+      console.log("修改商品成功");
+    } catch (error) {
+      console.dir(error);
+      console.log("修改商品失敗");
+    }
+  }
+
+  // post admin upload
+  async function postAdminUpload(data) {
+    try {
+      const res = await axios.post(`api/${VITE_API_PATH}/admin/upload`, data);
+      return res.data.imageUrl;
+    } catch (error) {
+      console.dir(error);
+      console.log("上傳主圖失敗");
     }
   }
 
@@ -73,35 +114,15 @@ function ProductsList() {
   //  建立 BS5 的 modal 實體
   useEffect(() => {
     modifyModal.current = new bootstrap.Modal(modifyModalNode.current);
-    console.log(modifyModal.current);
   }, []);
 
   // 開啟 modifyModal handler
   function openModifyModalHandler(e, product) {
     if (e.target.name === "新增") {
-      // 空商品資料
-      const emptyProduct = {
-        title: "",
-        category: "",
-        origin_price: "",
-        price: "",
-        unit: "",
-        description: "",
-        content: "",
-        is_enabled: 0,
-        imageUrl: "https://picsum.photos/200",
-        imagesUrl: [
-          "https://picsum.photos/200",
-          "https://picsum.photos/200",
-          "https://picsum.photos/200",
-          "https://picsum.photos/200",
-          "https://picsum.photos/200",
-        ],
-      };
       reset(emptyProduct);
+      setButtonMode(e.target.name);
+      setTempProduct(emptyProduct);
     } else {
-      console.dir(e.target.name);
-      console.log(product);
       reset({
         title: product.title,
         category: product.category,
@@ -112,8 +133,10 @@ function ProductsList() {
         content: product.content,
         is_enabled: product.is_enabled,
         imageUrl: product.imageUrl,
-        imagesUrl: [product.imagesUrl],
+        imagesUrl: product.imagesUrl,
       });
+      setButtonMode(e.target.name);
+      setTempProduct(product);
     }
     modifyModal.current.show();
   }
@@ -124,35 +147,58 @@ function ProductsList() {
   }
 
   // onsubmit handler
-  function onsubmitHandler(data) {
-    // 建議使用展開語法...data
+  async function onsubmitHandler(data) {
+    let imageUrl = "";
+    const { imageUpload, ...productData } = data;
+
+    if (imageUpload.length >= 1) {
+      const imageFile = imageUpload[0];
+      const formData = new FormData();
+      formData.append("file-to-upload", imageFile);
+      imageUrl = await postAdminUpload(formData);
+    }
+
     const convertData = {
       data: {
-        title: data.title,
-        category: data.category,
-        origin_price: Number(data.origin_price),
-        price: Number(data.price),
-        unit: data.unit,
-        description: data.description,
-        content: data.content,
-        is_enabled: Number(data.is_enabled),
-        imageUrl: data.imageUrl,
-        imagesUrl: [
-          "圖片網址一",
-          "圖片網址二",
-          "圖片網址三",
-          "圖片網址四",
-          "圖片網址五",
-        ],
+        ...productData,
+        origin_price: Number(productData.origin_price),
+        price: Number(productData.price),
+        is_enabled: Number(productData.is_enabled),
+        imageUrl,
       },
     };
-    postAdminProduct(convertData);
+
+    if (buttonMode === "新增") {
+      postAdminProduct(convertData);
+    } else {
+      putAdminProduct(convertData, tempProduct.id);
+    }
+  }
+
+  // add imagesUrl
+  function addImagesUrlHandler() {
+    const newImagesUrl = [...tempProduct.imagesUrl];
+    newImagesUrl.push("");
+    setTempProduct({
+      ...tempProduct,
+      imagesUrl: newImagesUrl,
+    });
+  }
+
+  // delete imagesUrl
+  function deleteImagesUrlHandler() {
+    const newImagesUrl = [...tempProduct.imagesUrl];
+    newImagesUrl.pop();
+    setTempProduct({
+      ...tempProduct,
+      imagesUrl: newImagesUrl,
+    });
   }
 
   return (
     <>
       {console.log("渲染JSX")}
-      {}
+      {console.log(pagination)}
       <div className="container">
         <div className="row mt-5">
           {/* 商品列表 */}
@@ -194,7 +240,13 @@ function ProductsList() {
                       <td>{product.title}</td>
                       <td>{product.origin_price}</td>
                       <td>{product.price}</td>
-                      <td>{product.is_enabled}</td>
+                      <td
+                        className={
+                          product.is_enabled ? "text-success" : "text-danger"
+                        }
+                      >
+                        {product.is_enabled ? "啟用" : "不啟用"}
+                      </td>
                       <td>
                         <button
                           className="btn btn-primary"
@@ -223,12 +275,59 @@ function ProductsList() {
                 })}
               </tbody>
             </table>
+            <nav aria-label="Page navigation example">
+              <ul className="pagination">
+                {/* 前一頁 */}
+                <li className="page-item">
+                  <button
+                    type="button"
+                    className={`page-link ${pagination.has_pre || "disabled"}`}
+                    aria-label="Previous"
+                    onClick={() => {
+                      getAdminProducts(pagination.current_page - 1);
+                    }}
+                  >
+                    <span aria-hidden="true">&laquo;</span>
+                  </button>
+                </li>
+                {/* 分頁 */}
+                {[...new Array(pagination.total_pages)].map((_, index) => {
+                  return (
+                    <li className="page-item" key={index + 1}>
+                      <a
+                        className={`page-link ${index + 1 === pagination.current_page && "bg-warning"}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          getAdminProducts(index + 1);
+                        }}
+                      >
+                        {index + 1}
+                      </a>
+                    </li>
+                  );
+                })}
+                {/* 後一頁 */}
+                <li className="page-item">
+                  <button
+                    type="button"
+                    className={`page-link ${pagination.has_next || "disabled"}`}
+                    aria-label="Previous"
+                    onClick={() => {
+                      getAdminProducts(pagination.current_page + 1);
+                    }}
+                  >
+                    <span aria-hidden="true">&raquo;</span>
+                  </button>
+                </li>
+              </ul>
+            </nav>
           </div>
           {/* 商品詳情 */}
           <div className="col-md-5">
             <h2 className="text-center">商品詳情</h2>
             <div>
-              {tempProduct.id ? (
+              {tempProduct.title ? (
                 <>
                   <h2>{tempProduct.title}</h2>
                   <img
@@ -264,9 +363,11 @@ function ProductsList() {
       >
         <div className="modal-dialog modal-xl">
           <div className="modal-content border-0">
-            <div className="modal-header bg-dark text-white">
+            <div
+              className={`modal-header text-white ${buttonMode === "新增" ? "bg-info" : "bg-warning"}`}
+            >
               <h5 id="productModalLabel" className="modal-title">
-                <span>新增商品</span>
+                {buttonMode === "新增" ? "新增商品" : "編輯商品"}
               </h5>
               <button
                 type="button"
@@ -281,13 +382,13 @@ function ProductsList() {
                   <div className="mb-2">
                     <div className="mb-3">
                       <label htmlFor="imageUrl" className="form-label">
-                        輸入主圖片網址
+                        上傳主圖
                       </label>
                       <input
-                        type="text"
+                        type="file"
                         className="form-control"
                         placeholder="請輸入圖片連結"
-                        {...register("imageUrl")}
+                        {...register("imageUpload")}
                       />
                     </div>
                     <img className="img-fluid" src="" alt="" />
@@ -301,21 +402,52 @@ function ProductsList() {
                         type="text"
                         className="form-control"
                         placeholder="請輸入圖片連結"
-                        {...register("imagesUrl")}
+                        {...register("imageUrl")}
                       />
                     </div>
                     <img className="img-fluid" src="" alt="" />
                   </div>
+                  {tempProduct.imagesUrl.map((item, index) => {
+                    return (
+                      <div className="mb-2" key={index}>
+                        <div className="mb-3">
+                          <label htmlFor="imageUrl" className="form-label">
+                            {`請輸入副圖${index + 1}`}
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="請輸入圖片連結"
+                            {...register(`imagesUrl.${index}`)}
+                          />
+                        </div>
+                        <img
+                          className="img-fluid"
+                          src={item}
+                          alt={tempProduct.title}
+                        />
+                      </div>
+                    );
+                  })}
+
                   <div>
-                    <button className="btn btn-outline-primary btn-sm d-block w-100">
+                    <button
+                      onClick={addImagesUrlHandler}
+                      className="btn btn-outline-primary btn-sm d-block w-100"
+                    >
                       新增圖片
                     </button>
                   </div>
-                  <div>
-                    <button className="btn btn-outline-danger btn-sm d-block w-100">
-                      刪除圖片
-                    </button>
-                  </div>
+                  {tempProduct.imagesUrl.length > 1 && (
+                    <div>
+                      <button
+                        onClick={deleteImagesUrlHandler}
+                        className="btn btn-outline-danger btn-sm d-block w-100"
+                      >
+                        刪除圖片
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="col-sm-8">
                   <div className="mb-3">
