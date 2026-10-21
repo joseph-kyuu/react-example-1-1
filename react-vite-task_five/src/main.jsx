@@ -4,7 +4,7 @@ import "./assets/scss/all.scss";
 
 import { RouterProvider } from "react-router-dom";
 import router from "./router";
-import { useState, useEffect, createContext } from "react";
+import { useState, createContext } from "react";
 
 export const AuthContext = createContext(null);
 
