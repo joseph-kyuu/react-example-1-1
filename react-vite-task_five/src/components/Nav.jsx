@@ -59,8 +59,13 @@ function Nav() {
                 </Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" to="/app">
+                <Link className="nav-link" to="/productsList">
                   商品
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/cartList">
+                  購物車
                 </Link>
               </li>
               {authToken ? (
