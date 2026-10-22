@@ -1,0 +1,16 @@
+@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+
+/* 讓所有瀏覽器的數字輸入框上下按鈕隱藏 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* 適用於 Firefox */
+}
+
+.w-10 {
+  width: 10%;
+}
