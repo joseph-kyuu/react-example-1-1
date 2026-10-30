@@ -14,6 +14,8 @@ function CartList() {
   const [total, setTotal] = useState(0);
   // 表單
   const { register, handleSubmit, reset } = useForm();
+  // 載入
+  const [btnLoading, setBtnLoading] = useState([]);
 
   // get cart
   async function getCart() {
@@ -30,6 +32,10 @@ function CartList() {
   // put cart
   async function putCart(qty, cartId, productId) {
     try {
+      console.log("old:", btnLoading);
+      setBtnLoading((pre) => {
+        return [...pre, cartId];
+      });
       const qtyData = {
         data: {
           product_id: productId,
@@ -40,9 +46,13 @@ function CartList() {
         `api/${VITE_API_PATH}/cart/${cartId}`,
         qtyData,
       );
-
       console.log("修改商品數量成功");
-      getCart();
+      await getCart();
+      setBtnLoading((pre) => {
+        return pre.filter((id) => {
+          return id !== cartId;
+        });
+      });
     } catch (error) {
       console.log("修改商品數量失敗");
     }
@@ -99,6 +109,7 @@ function CartList() {
 
   return (
     <>
+      {console.log(btnLoading)}
       <div className="container">
         {/* 購物車 */}
         <div className="mb-5 py-5">
@@ -132,26 +143,36 @@ function CartList() {
                     <td>{cart.product.title}</td>
                     <td>{cart.product.price}</td>
                     <td className="w-10">
-                      <button
-                        onClick={() => {
-                          putCart(cart.qty + 1, cart.id, cart.product_id);
-                        }}
-                      >
-                        +
-                      </button>
-                      <input
-                        className="text-center w-50"
-                        type="number"
-                        disabled
-                        value={cart.qty}
-                      />
-                      <button
-                        onClick={() => {
-                          putCart(cart.qty - 1, cart.id, cart.product_id);
-                        }}
-                      >
-                        -
-                      </button>
+                      {btnLoading.includes(cart.id) ? (
+                        <>
+                          <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              putCart(cart.qty + 1, cart.id, cart.product_id);
+                            }}
+                          >
+                            +
+                          </button>
+                          <input
+                            className="text-center w-50"
+                            type="number"
+                            disabled
+                            value={cart.qty}
+                          />
+                          <button
+                            onClick={() => {
+                              putCart(cart.qty - 1, cart.id, cart.product_id);
+                            }}
+                          >
+                            -
+                          </button>
+                        </>
+                      )}
                     </td>
                     <td>{cart.total}</td>
                     <td>
